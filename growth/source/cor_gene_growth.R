@@ -51,7 +51,7 @@ colnames(cor.growth.tissue) <- growthTissueNames
 ## All tissues as well as tissue-specific
 cor.growth <- cbind(cor.growth.allTissues, cor.growth.tissue)
 
-saveRDS(cor.growth, file="cor_geneGrowth.Rda")
+saveRDS(cor.growth, file="cor_gene_growth.Rda")
 
 
 # Diagnostic plots for inspection
