@@ -7,7 +7,8 @@ library(Biobase)
 pdxun <- readRDS("~/Desktop/growth_arvind/data/pdxe_untreated.Rda")
 
 
-# Compute the Pearson correlation for gene expression vs. each of the 3 growth features
+# Compute the Pearson correlation for gene expression vs. each of the 3 growth features:
+# survival (time.last_published), slope, and doubling time (timeToDouble_published)
 ## All across the board; not tissue-specific
 corGrowthAll <- function(feature, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
   return(cor(x=t(expMatrix), y=eSet[, feature], method="pearson"))
@@ -22,8 +23,8 @@ colnames(cor.growth.allTissues) <- paste(c("Survival", "Slope", "DoublingTime"),
 
 ## Tissue-specific
 corGrowthTissue <- function(feature, tissue, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
-  expTissue <- expMatrix[, pdxun@phenoData$tumor.type==tissue]
-  featureTissue <- eSet[pdxun@phenoData$tumor.type==tissue, ]
+  expTissue <- expMatrix[, pdxun$tumor.type==tissue]
+  featureTissue <- eSet[eSet$tumor.type==tissue, ]
   return(cor(x=t(expTissue), y=featureTissue[, feature], method="pearson"))
 }
 
@@ -64,8 +65,8 @@ corPlotAll <- function(gene, feature, expMatrix=exprs(pdxun), eSet=pData(pdxun))
 
 ## Tissue-specific
 corPlotTissue <- function(gene, feature, tissue, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
-  expTissue <- expMatrix[, pdxun@phenoData$tumor.type==tissue]
-  featureTissue <- eSet[pdxun@phenoData$tumor.type==tissue, ]
+  expTissue <- expMatrix[, pdxun$tumor.type==tissue]
+  featureTissue <- eSet[eSet$tumor.type==tissue, ]
   plot(expTissue[gene, ], featureTissue[, feature],
        ylab=paste(toupper(substr(feature, 1, 1)), substr(feature, 2, nchar(feature)), sep=""),
        xlab="Expression",
