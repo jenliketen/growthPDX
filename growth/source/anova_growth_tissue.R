@@ -8,7 +8,7 @@ pdxun <- readRDS("~/Desktop/growth/data/pdxe_untreated.Rda")
 
 
 # Compute the Pearson correlation between the growth features:
-## doubling time (timeToDouble_published), survival (time.last_published), and slope
+# doubling time (timeToDouble_published), survival (time.last_published), and slope
 ## Store as variables if you want, but the results are within expected ranges
 corGrowthFeature <- function(feature1, feature2, eSet=pData(pdxun)) {
   return(cor(x=eSet[, feature1], y=eSet[, feature2], method="pearson"))
