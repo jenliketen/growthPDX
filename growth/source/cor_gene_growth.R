@@ -14,12 +14,12 @@ corGrowthAll <- function(feature, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
   return(cor(x=t(expMatrix), y=eSet[, feature], method="pearson"))
 }
 
+cor.doublingTime.allTissues <- corGrowthAll("timeToDouble_published")
 cor.survival.allTissues <- corGrowthAll("time.last_published")
 cor.slope.allTissues <- corGrowthAll("slope")
-cor.doubleTime.allTissues <- corGrowthAll("timeToDouble_published")
 
-cor.growth.allTissues <- data.frame(cor.survival.allTissues, cor.slope.allTissues, cor.doubleTime.allTissues)
-colnames(cor.growth.allTissues) <- paste(c("Survival", "Slope", "DoublingTime"), "AllTissues", sep=".")
+cor.growth.allTissues <- data.frame(cor.doublingTime.allTissues, cor.survival.allTissues, cor.slope.allTissues)
+colnames(cor.growth.allTissues) <- paste(c("DoublingTime", "Survival", "Slope"), "AllTissues", sep=".")
 
 ## Tissue-specific
 corGrowthTissue <- function(feature, tissue, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
@@ -30,17 +30,17 @@ corGrowthTissue <- function(feature, tissue, expMatrix=exprs(pdxun), eSet=pData(
 
 tmpMatrix <- NULL
 for (tissue in unique(pdxun$tumor.type)) {
+  cor.doublingTime.tissue <- corGrowthTissue("timeToDouble_published", tissue)
   cor.survival.tissue <- corGrowthTissue("time.last_published", tissue)
   cor.slope.tissue <- corGrowthTissue("slope", tissue)
-  cor.doubleTime.tissue <- corGrowthTissue("timeToDouble_published", tissue)
-  tmpMatrix <- cbind(tmpMatrix, cor.survival.tissue, cor.slope.tissue, cor.doubleTime.tissue)
+  tmpMatrix <- cbind(tmpMatrix, cor.doublingTime.tissue, cor.survival.tissue, cor.slope.tissue)
 }
 
 cor.growth.tissue <- as.data.frame(tmpMatrix)
 
 growthTissueNames <- c()
 for (name in unique(pdxun$tumor.type)) {
-  for (parameter in c("Survival", "Slope", "DoublingTime")) {
+  for (parameter in c("DoublingTime", "Survival", "Slope")) {
     x <- paste(parameter, name, sep=".")
     growthTissueNames <- c(growthTissueNames, x)
   }
