@@ -4,7 +4,7 @@ library(Biobase)
 
 
 # Load the PDXE dataset
-pdxun <- readRDS("~/Desktop/growth_arvind/data/pdxe_untreated.Rda")
+pdxun <- readRDS("~/Desktop/growth/data/pdxe_untreated.Rda")
 
 
 # Compute the Pearson correlation for gene expression vs. each of the 3 growth features:
