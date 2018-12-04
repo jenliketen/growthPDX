@@ -8,7 +8,7 @@ pdxun <- readRDS("~/Desktop/growth_arvind/data/pdxe_untreated.Rda")
 
 
 # Compute the Pearson correlation for gene expression vs. each of the 3 growth features:
-# survival (time.last_published), slope, and doubling time (timeToDouble_published)
+# doubling time (timeToDouble_published), survival (time.last_published), and slope
 ## All across the board; not tissue-specific
 corGrowthAll <- function(feature, expMatrix=exprs(pdxun), eSet=pData(pdxun)) {
   return(cor(x=t(expMatrix), y=eSet[, feature], method="pearson"))
