@@ -78,7 +78,7 @@ growth.anova <- list("Doubling Time"=doublingTime.anova.summary,
 saveRDS(growth.anova, file="growth_anova.Rda")
 
 
-# Pariwise comparisons
+# Pairwise comparisons
 ## Again, focus mainly on doubling time
 doublingTime.pairwise <- TukeyHSD(doublingTime.anova)
 survival.pairwise <- TukeyHSD(survival.anova)
