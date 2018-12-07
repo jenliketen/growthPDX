@@ -69,6 +69,7 @@ pdf("dtClasses_plot.pdf",
 dtClasses_plot <- growthClass.boxplot(growthClass=extremes, varClass="dtClass", varFeature="DoublingTime")
 dev.off()
 
+
 # Preprocessing for the expression matrix; generate Z-scores
 ## The function assumes that the column means are zero
 CenterANDScal <- function(trData, tsData=NULL)
