@@ -48,8 +48,9 @@ for (name in unique(pdxun$tumor.type)) {
 
 colnames(cor.growth.tissue) <- growthTissueNames
 
-## All tissues as well as tissue-specific
+## All tissues as well as tissue-specific; sort in descending order
 cor.growth <- cbind(cor.growth.allTissues, cor.growth.tissue)
+cor.growth <- cor.growth[order(-cor.growth$DoublingTime.AllTissues), ]
 
 saveRDS(cor.growth, file="cor_gene_growth.Rda")
 
