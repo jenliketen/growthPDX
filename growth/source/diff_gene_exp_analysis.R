@@ -53,22 +53,30 @@ doublingTimeSpread <- plot(mean.vec, sd.vec, pch=".",
 ## As expected, we see from the plot that the expression values are heteroscedastic
 
 
-# Subset the highest and lowest 25 doubling time values
-## 1x1x1 PDX experimental design; number of replicates is 1!!!
-## We do not know how much error there is with the median doubling time, so we take values at
-## the extremes to fall on the safe side
-growthFeature <- "DoublingTime"
-growthClass <- sortByCol(x=growthClass, col=growthFeature, asc=FALSE)
-n=25
-extremes <- growthClass[c(1:n, (nrow(growthClass)-n+1):nrow(growthClass)), ] ## For now we will take 25 from each end
-eSet.subsetByN <- pData(pdxun)[extremes$id, ]
-table(eSet.subsetByN$tumor.type, extremes$dtClass) ## Make sure all tissue types are included in our selection
+################## 1x1x1 PDX experimental design; number of replicates is 1!!! ###################
+### We do not know how much error there is with the median doubling time, so we take values at ###
+############################## the extremes to fall on the safe side #############################
 
-pdf("dtClasses_plot.pdf",
-    width=12, height=8)
-growthClass.boxplot(growthClassData=extremes, varClass="dtClass", varFeature="DoublingTime")
-dev.off()
+# First, we try subsetting the highest and lowest N doubling time values
+## Subset N samples
+samples.subset <- function(growthFeature, n) {
+  growthClass <- sortByCol(x=growthClass, col=growthFeature, asc=FALSE)
+  subsettedSamples <- growthClass[c(1:n, (nrow(growthClass)-n+1):nrow(growthClass)), ]
+  phenoDataSubsetted <- pData(pdxun)[subsettedSamples$id, ]
+  tissuesIncluded <- table(phenoDataSubsetted$tumor.type, subsettedSamples$dtClass) ## Make sure all tissue types are included in our selection
+  if (any(tissuesIncluded==0)) {
+    warning("Not all tissue types are included. Would you like to change the value of N?")
+  }
+  return(subsettedSamples)
+  }
 
+## Subset expression data for the selected N samples
+expression.subset <- function(n) {
+  growthClass <- sortByCol(x=growthClass, col="DoublingTime", asc=FALSE)
+  subsettedSamples <- growthClass[c(1:n, (nrow(growthClass)-n+1):nrow(growthClass)), ]
+  expressionSubsetted <- exprs(pdxun)[, subsettedSamples$id]
+  return(expressionSubsetted)
+}
 
 # Preprocessing for the expression matrix; generate Z-scores
 ## The function assumes that the column means are zero
@@ -78,17 +86,32 @@ centerAndScale <- function(trData, tsData=NULL) {
   
   if (is.null(tsData)) {
     return(trS)
-    }
+  }
   
   tsS <- predict(preProcValues, tsData) ## The tsData will be the TCGA data we feed in for ML later
   return(list(tr_data=trS, ts_data=tsS, scale_fact=preProcValues))
 }
 
-expS <- exprs(pdxun)[, extremes$id]
-expS <- expS[-which(apply(expS, 1, var)==0), ] ## Remove genes with zero variance or function complains
-expS <- t(centerAndScale(t(expS))) ## Tranpose twice because we want our row means to be zero
-dim(expS)
 
+## Prepare sample and expression data
+sampleDataAllN <- list()
+expDataAllN <- list()
+for (i in c(22, seq(25, 50, by=5))) {
+  samples <- samples.subset("DoublingTime", n=i)
+  expS <- expression.subset(n=i)
+  expS <- expS[-which(apply(expS, 1, var)==0), ] ## Remove genes with zero variance or function complains
+  expS <- t(centerAndScale(t(expS))) ## Tranpose twice because we want our row means to be zero
+  sampleDataAllN[[paste0("n=", i)]] <- samples
+  expDataAllN[[paste0("n=", i)]] <- expS
+}
+
+## Plots for inspection
+pdf("dtClasses_plot.pdf",
+    width=12, height=8)
+for (i in 1:length(sampleDataAllN)) {
+  print(growthClass.boxplot(growthClassData=sampleDataAllN[[i]], varClass="dtClass", varFeature="DoublingTime"))
+}
+dev.off()
 
 # Limma baseline model for t-test
 ## Ideally we would use DESeq2 or edgeR to correct for heteroscedasticity, but alas, we do not
@@ -104,6 +127,33 @@ doDiffExp <- function(mat, flab) {
   return(diffLst)
 }
 
-doublingTime.doDiffExp <- doDiffExp(expS, extremes$dtClass)
 
-saveRDS(doublingTime.doDiffExp, file="diff_gene_exp_doublingTime.Rda")
+doublingTime.doDiffExp.N <- list()
+for (i in 1:length(sampleDataAllN)) {
+  doublingTime.doDiffExp.N[[i]] <- doDiffExp(expDataAllN[[i]], sampleDataAllN[[i]]$dtClass)
+}
+
+howManySamples <- c()
+for (i in c(22, seq(25, 50, by=5))) {
+  howManySamples <- c(howManySamples, paste0("n=", i))
+}
+
+names(doublingTime.doDiffExp.N) <- howManySamples
+
+saveRDS(doublingTime.doDiffExp.N, file="diff_gene_exp_doublingTime_N.Rda")
+
+
+# We can also try taking the high values above the 3rd quartile and the low ones below the 1st quartile
+## Prepare sample and expression data
+above_3_quart <- growthClass[which(growthClass$DoublingTime > quantile(growthClass$DoublingTime, 0.75)), ]
+below_1_quart <- growthClass[which(growthClass$DoublingTime < quantile(growthClass$DoublingTime, 0.25)), ]
+samplesByQuartiles <- rbind(above_3_quart, below_1_quart)
+dim(samplesByQuartiles) ## In this case N=44, similar to the case we did for N=45
+
+expressionByQuartiles <- expression.subset(n=nrow(above_3_quart))
+expressionByQuartiles <- expressionByQuartiles[-which(apply(expressionByQuartiles, 1, var)==0), ] ## Remove genes with zero variance or function complains
+expressionByQuartiles <- t(centerAndScale(t(expressionByQuartiles))) ## Tranpose twice because we want our row means to be zero
+
+doublingTime.doDiffExp.quartiles <- doDiffExp(expressionByQuartiles, samplesByQuartiles$dtClass)
+
+saveRDS(doublingTime.doDiffExp.quartiles, file="diff_gene_exp_doublingTime_quartiles.Rda")
