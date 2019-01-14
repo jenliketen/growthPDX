@@ -15,6 +15,8 @@ growthClass <- data.frame(id = rownames(pData(pdxun)),
                           DoublingTime=pData(pdxun)$timeToDouble_published,
                           Survival=pData(pdxun)$time.last_published,
                           Slope=pData(pdxun)$slope, stringsAsFactors=FALSE)
+growthClass <- growthClass[-which(growthClass$Survival < 10), ] ## Include only samples with greater than 10 days survival
+                                                                ## Less than 10 days indicates mouse died of other reasons
 growthClass$dtClass <-  ifelse(growthClass$DoublingTime<median(growthClass$DoublingTime), "Low", "High")
 growthClass$surClass <- ifelse(growthClass$Survival<median(growthClass$Survival), "Low", "High")
 growthClass$slClass <- ifelse(growthClass$Slope<median(growthClass$Slope), "Low", "High")
@@ -92,14 +94,13 @@ centerAndScale <- function(trData, tsData=NULL) {
   return(list(tr_data=trS, ts_data=tsS, scale_fact=preProcValues))
 }
 
-
 ## Prepare sample and expression data
 sampleDataAllN <- list()
 expDataAllN <- list()
-for (i in c(22, seq(25, 50, by=5))) {
+for (i in c(18, seq(20, 50, by=5))) {
   samples <- samples.subset("DoublingTime", n=i)
   expS <- expression.subset(n=i)
-  expS <- expS[-which(apply(expS, 1, var)==0), ] ## Remove genes with zero variance or function complains
+  expS <- expS[which(apply(expS, 1, var)!=0), ] ## Remove genes with zero variance or function complains
   expS <- t(centerAndScale(t(expS))) ## Tranpose twice because we want our row means to be zero
   sampleDataAllN[[paste0("n=", i)]] <- samples
   expDataAllN[[paste0("n=", i)]] <- expS
@@ -127,14 +128,13 @@ doDiffExp <- function(mat, flab) {
   return(diffLst)
 }
 
-
 doublingTime.doDiffExp.N <- list()
 for (i in 1:length(sampleDataAllN)) {
   doublingTime.doDiffExp.N[[i]] <- doDiffExp(expDataAllN[[i]], sampleDataAllN[[i]]$dtClass)
 }
 
 howManySamples <- c()
-for (i in c(22, seq(25, 50, by=5))) {
+for (i in c(18, seq(20, 50, by=5))) {
   howManySamples <- c(howManySamples, paste0("n=", i))
 }
 
@@ -148,7 +148,7 @@ saveRDS(doublingTime.doDiffExp.N, file="diff_gene_exp_doublingTime_N.Rda")
 above_3_quart <- growthClass[which(growthClass$DoublingTime > quantile(growthClass$DoublingTime, 0.75)), ]
 below_1_quart <- growthClass[which(growthClass$DoublingTime < quantile(growthClass$DoublingTime, 0.25)), ]
 samplesByQuartiles <- rbind(above_3_quart, below_1_quart)
-dim(samplesByQuartiles) ## In this case N=44, similar to the case we did for N=45
+dim(samplesByQuartiles) ## In this case N=43, similar to the case we did for N=45
 
 expressionByQuartiles <- expression.subset(n=nrow(above_3_quart))
 expressionByQuartiles <- expressionByQuartiles[-which(apply(expressionByQuartiles, 1, var)==0), ] ## Remove genes with zero variance or function complains
