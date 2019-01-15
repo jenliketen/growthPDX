@@ -51,4 +51,5 @@ Please head over to the [Wiki](https://github.com/jenliketen/growthPDX/wiki) for
     install.packages("snow")
     
     # XLConnect
+    ## Make sure you have installed the most recent version of the Java SE Development Kit
     install.packages("XLConnect")
