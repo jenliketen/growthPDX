@@ -2,7 +2,7 @@
 
 ## Overview
 
-The PDX Growth Signatures project aims to use machine learning methods to discover novel biomarkers associated with tumor growth rates in patient-derived xenograft (PDX) mouse models. Studies have shown that the rate of engraftment of PDXs is correlated with survival outcomes, such as this recent article about [head-and-neck cancer](https://www.cell.com/cell-reports/pdf/S2211-1247(18)31567-5.pdf). As PDXs have been widely used in drug development and discovery, we propose to study the gene signatures associated with PDX growth rates to develop robust models for cancer risk stratification and drug targeting.
+The PDX Growth Signatures project aims to use machine learning methods to discover novel biomarkers associated with tumor growth rates in patient-derived xenograft (PDX) mouse models. Studies have shown that the rate of engraftment of PDXs is correlated with survival outcomes, such as this recent article about [head-and-neck cancer](https://www.cell.com/cell-reports/pdf/S2211-1247(18)31567-5.pdf). As PDXs have been widely used in drug development and discovery, we would like to study the gene signatures associated with PDX growth rates to develop robust models for cancer risk stratification and drug targeting.
 
 ## Getting Started
 
