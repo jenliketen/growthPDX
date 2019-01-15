@@ -46,3 +46,9 @@ Please head over to the [Wiki](https://github.com/jenliketen/growthPDX/wiki) for
     
     # piano
     BiocManager::install("piano", version = "3.8")
+
+    # snow
+    install.packages("snow")
+    
+    # XLConnect
+    install.packages("XLConnect")
