@@ -26,11 +26,11 @@ Please head over to the [Wiki](https://github.com/jenliketen/growthPDX/wiki) for
     devtools::install_github("bhklab/Xeva")
     
     # BiocManager
-    if (!requireNamespace("BiocManager", quietly = TRUE))
+    if (!requireNamespace("BiocManager", quietly=TRUE))
     install.packages("BiocManager")
     
     # Biobase
-    BiocManager::install("Biobase", version = "3.8")
+    BiocManager::install("Biobase", version="3.8")
     
     # ggplot2
     install.packages("ggplot2")
@@ -39,13 +39,13 @@ Please head over to the [Wiki](https://github.com/jenliketen/growthPDX/wiki) for
     install.packages("BBmisc")
     
     # edgeR
-    BiocManager::install("edgeR", version = "3.8")
+    BiocManager::install("edgeR", version="3.8")
     
     # limma
-    BiocManager::install("limma", version = "3.8")
+    BiocManager::install("limma", version="3.8")
     
     # piano
-    BiocManager::install("piano", version = "3.8")
+    BiocManager::install("piano", version="3.8")
 
     # snow
     install.packages("snow")
