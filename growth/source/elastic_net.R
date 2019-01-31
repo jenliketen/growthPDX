@@ -10,7 +10,7 @@ library(plotROC)
 pdxun <- readRDS("~/Desktop/growth/data/pdxe_untreated.Rda")
 dgea <- readRDS("~/Desktop/growth/data/results/diff_gene_exp_doublingTime_N.Rda")
 dgea <- dgea$`n=50`
-dgea <- dgea[which(dgea$P.Value < 0.05), ]
+dgea <- dgea[which(dgea$P.Value < 0.05), ] ## All genes with p-value of less than 0.05, including both up and downregulation
 
 ## Gene expression matrix
 expMatrix <- exprs(pdxun)
