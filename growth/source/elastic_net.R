@@ -1,18 +1,24 @@
+setwd("~/Desktop/growth/data/results")
+
 library(Biobase)
 library(caret)
+library(doMC)
+library(plotROC)
 
 
+# Prepare matrix of predictors (gene expresison) and vector of response (doubling time)
 pdxun <- readRDS("~/Desktop/growth/data/pdxe_untreated.Rda")
 dgea <- readRDS("~/Desktop/growth/data/results/diff_gene_exp_doublingTime_N.Rda")
 dgea <- dgea$`n=50`
 dgea <- dgea[which(dgea$P.Value < 0.05), ]
 
+## Gene expression matrix
 expMatrix <- exprs(pdxun)
 expMatrix <- expMatrix[which(apply(expMatrix, 1, var) != 0), ]
 expMatrix <- expMatrix[rownames(dgea), ]
 expMatrix <- t(expMatrix)
 
-
+## Doubling time vector
 growthClass <- data.frame(id = rownames(pData(pdxun)),
                           DoublingTime=pData(pdxun)$timeToDouble_published,
                           Survival=pData(pdxun)$time.last_published, stringsAsFactors=FALSE)
@@ -23,55 +29,75 @@ rownames(growthClass) <- growthClass$id
 
 expMatrix <- expMatrix[growthClass$id, ] ## Subset the gene expression matrix accordingly
 
-growthClass$dtClass <-  ifelse(growthClass$DoublingTime > median(growthClass$DoublingTime), "high", "low")
+growthClass$dtClass <- ifelse(growthClass$DoublingTime > median(growthClass$DoublingTime), "high", "low")
 
-dtOutcome <- factor(growthClass$dtClass)
+dt <- factor(growthClass$dtClass); names(dt) <- growthClass$id
 
-
-# Z-transform expression matrix
+## Preprocess the expression matrix
 preProcValues <- preProcess(expMatrix, method=c("center", "scale"))
 expMatrix <- predict(preProcValues, expMatrix)
 
 
-# Cross validation and building the model
-lambda.grid <- 10^seq(2, -10, length=10)
-alpha.grid <- seq(0, 0.5, length=6)
-searchGrid <- expand.grid(alpha=alpha.grid, lambda=lambda.grid)
+# Build the elastic net model using caret workflow
+predictAccuracy <- function(model, data, response) {
+  predictions <- predict(model, data.matrix(data), type="prob")
+  predictions$class <- predict(model, data.matrix(data))
 
-trCtrl <- trainControl(method="repeatedcv", number=4, p=0.8, repeats=5, allowParallel=TRUE, savePredictions = TRUE)
+  accuracy <- caret::confusionMatrix(predictions$class, response)
+  print(accuracy)
+
+  return(predictions)
+}
+
+trainModel <- function(x.train, y.train, x.test=NULL, y.test=NULL, NCPU=3) {
+  if (NCPU > 1) {registerDoMC(cores=NCPU)}
+  
+  trnCtrl <- trainControl(method="repeatedcv", number=4,
+                         allowParallel=TRUE, savePredictions=TRUE)
+
+  
+  lambda.grid <- 10^seq(2, -10, length=10)
+  alpha.grid <- seq(0, 0.5, length = 6)
+    
+  srchGrid = expand.grid(.alpha=alpha.grid, .lambda=lambda.grid)
+    
+  my_train <- train(x=x.train, y=y.train,
+                      method="glmnet", tuneGrid=srchGrid, trControl=trnCtrl,
+                      standardize=FALSE, maxit=1000000)
+
+  self.predict <- predictAccuracy(my_train, x.train, y.train)
+  
+  if(!is.null(x.test) && !is.null(y.test)) {
+    test.predict <- predictAccuracy(my_train, x.test, y.test)
+  }
+  
+  return(list(fit=my_train, training_predictions=self.predict, test_predictions=test.predict))
+}
+
+
+# Nested cross validation within the PDXE dataset (external test sets: TCGA and PDMR)
+allMod <- list()
+pdf("roc_curves.pdf",
+    width=12, height=8)
 
 set.seed(42)
 
-model <- train(x=expMatrix[, 1:100], y=dtOutcome,
-                  method="glmnet", tuneGrid=searchGrid, trControl=trCtrl,
-                  standardize=FALSE, maxit=1000000)
-plot.train(model)
-
-# Self-predict
-testIndex <- createDataPartition(response, times=4, p=0.1, list=TRUE)
-response <- growthClass$dtClass; names(response) <- growthClass$id
-
-allMod <- list()
-for(ts in testIndex)
-{
-  trainMatrix=expMatrix[-ts, ]; testMatrix= expMatrix[ts, ]
+testIndex <- createDataPartition(dt, times=4, p=0.1, list=TRUE)
+for(ts in testIndex) {
+  genes.train=expMatrix[-ts, ]; genes.test= expMatrix[ts, ]
   
-  trainResponse=response[rownames(trainMatrix)]; testResponse=response[rownames(testMatrix)]
+  dt.train=dt[rownames(genes.train)]; dt.test=dt[rownames(genes.test)]
   
-  model <- train(x=trainMatrix, y=trainResponse,
-                 method="glmnet", tuneGrid=searchGrid, trControl=trCtrl,
-                 standardize=FALSE, maxit=1000000)
+  elastic_net <- trainModel(genes.train, dt.train, genes.test, dt.test, NCPU=3)
   
-  self_predict <- predict(model, newdata=data.matrix(testMatrix), type="prob")
-  self_predict$class <- predict(model, newdata=data.matrix(testMatrix))
-  accuracy <- confusionMatrix(self_predict$class, testResponse)
+  allMod[[length(allMod)+1]] <- elastic_net
   
+  predictions <- elastic_net$test_predictions
+  predictions$org.class <- ifelse(dt.test=="high", 1, 0)
+  roc <- ggplot(predictions, aes(m=low, d=org.class)) + geom_roc() + style_roc() + coord_equal()
+  auc <- calc_auc(roc)
   
-  allMod[[length(allMod)+1]] <- accuracy
+  print(roc)
+  print(auc)
 }
-
-self_predict <- predict(model, newdata=data.matrix(expMatrix[, 1:100]), type="prob")
-self_predict$class <- predict(model, newdata=data.matrix(expMatrix[, 1:100]))
-accuracy <- confusionMatrix(self_predict$class, dtOutcome) ## sum(self_predict$class==dtOutcome)/length(dtOutcome)
-
-# top positive and negative genes
+dev.off()
